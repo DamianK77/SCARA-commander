@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.IO.Ports;
 using System.Windows.Forms;
+using System.Globalization;
 
 namespace SCARA_commander
 {
@@ -15,6 +16,10 @@ namespace SCARA_commander
     {
         string dataOUTmanual;
         string dataIN;
+        float xPos;
+        float yPos;
+        float zPos;
+        bool scara_busy;
         public Form1()
         {
             InitializeComponent();
@@ -73,13 +78,51 @@ namespace SCARA_commander
 
         private void serialPort1_DataReceived(object sender, SerialDataReceivedEventArgs e)
         {
-            dataIN = serialPort1.ReadLine();
-            this.Invoke(new EventHandler(showData));
+            if (serialPort1.IsOpen)
+            {
+                dataIN = serialPort1.ReadLine();
+                this.Invoke(new EventHandler(showData));
+            }
         }
 
         private void showData(object sender, EventArgs e)
         {
             textBoxReceive.Text = dataIN;
+            string[] tokens = dataIN.Split(' ');
+
+            if (tokens[0] == "1")
+            {
+                homeLabel.Text = "HOMED";
+                homeLabel.ForeColor = Color.Green;
+            } else
+            {
+                homeLabel.Text = "NOT HOMED";
+                homeLabel.ForeColor = Color.Red;
+            }
+
+            if (tokens[7] == "1")
+            {
+                scara_busy = true;
+                labelBusy.Text = "BUSY";
+                labelBusy.ForeColor = Color.Red;
+            }
+            else
+            {
+                scara_busy = false;
+                labelBusy.Text = tokens[7];
+                labelBusy.ForeColor = Color.Green;
+            }
+
+
+            labelXPos.Text = tokens[1];
+            labelYPos.Text = tokens[2];
+            labelZPos.Text = tokens[3];
+            labelAAng.Text = tokens[6];
+
+            xPos = float.Parse(tokens[1], CultureInfo.InvariantCulture.NumberFormat);
+            yPos = float.Parse(tokens[2], CultureInfo.InvariantCulture.NumberFormat);
+            zPos = float.Parse(tokens[3], CultureInfo.InvariantCulture.NumberFormat);
+
         }
 
         private void Form1_FormClosed(object sender, FormClosedEventArgs e)
@@ -96,7 +139,7 @@ namespace SCARA_commander
 
         private void buttonHoming_Click(object sender, EventArgs e)
         {
-            if (serialPort1.IsOpen)
+            if (serialPort1.IsOpen && !scara_busy)
             {
                 serialPort1.Write("G28");
             }
@@ -104,7 +147,7 @@ namespace SCARA_commander
 
         private void buttonMove_Click(object sender, EventArgs e)
         {
-            if (serialPort1.IsOpen)
+            if (serialPort1.IsOpen && !scara_busy)
             {
                 string move_msg = "G1" + " X" + textBoxXinput.Text + " Y" + textBoxYinput.Text + " Z" + textBoxZinput.Text + " F" + textBoxFinput.Text;
                 serialPort1.Write(move_msg);
@@ -128,6 +171,65 @@ namespace SCARA_commander
                     trackBarSpeed.Value = trackBarSpeed.Maximum;
                 }
             }
+        }
+
+        private void groupBox7_Enter(object sender, EventArgs e)
+        {
+
+        }
+
+        private void buttonXneg_Click(object sender, EventArgs e)
+        {
+            float[] xyz = { xPos - float.Parse(textboxJogDist.Text, CultureInfo.InvariantCulture.NumberFormat), yPos, zPos};
+            textBoxXinput.Text = xyz[0].ToString();
+            textBoxYinput.Text = xyz[1].ToString();
+            textBoxZinput.Text = xyz[2].ToString();
+            buttonMove.PerformClick();
+        }
+
+        private void buttonXpos_Click(object sender, EventArgs e)
+        {
+            float[] xyz = { xPos + float.Parse(textboxJogDist.Text, CultureInfo.InvariantCulture.NumberFormat), yPos, zPos };
+            textBoxXinput.Text = xyz[0].ToString();
+            textBoxYinput.Text = xyz[1].ToString();
+            textBoxZinput.Text = xyz[2].ToString();
+            buttonMove.PerformClick();
+        }
+
+        private void buttonYpos_Click(object sender, EventArgs e)
+        {
+            float[] xyz = { xPos , yPos + float.Parse(textboxJogDist.Text, CultureInfo.InvariantCulture.NumberFormat), zPos };
+            textBoxXinput.Text = xyz[0].ToString();
+            textBoxYinput.Text = xyz[1].ToString();
+            textBoxZinput.Text = xyz[2].ToString();
+            buttonMove.PerformClick();
+        }
+
+        private void buttonYneg_Click(object sender, EventArgs e)
+        {
+            float[] xyz = { xPos, yPos - float.Parse(textboxJogDist.Text, CultureInfo.InvariantCulture.NumberFormat), zPos };
+            textBoxXinput.Text = xyz[0].ToString();
+            textBoxYinput.Text = xyz[1].ToString();
+            textBoxZinput.Text = xyz[2].ToString();
+            buttonMove.PerformClick();
+        }
+
+        private void buttonZneg_Click(object sender, EventArgs e)
+        {
+            float[] xyz = { xPos, yPos, zPos - float.Parse(textboxJogDist.Text, CultureInfo.InvariantCulture.NumberFormat) };
+            textBoxXinput.Text = xyz[0].ToString();
+            textBoxYinput.Text = xyz[1].ToString();
+            textBoxZinput.Text = xyz[2].ToString();
+            buttonMove.PerformClick();
+        }
+
+        private void buttonZpos_Click(object sender, EventArgs e)
+        {
+            float[] xyz = { xPos, yPos, zPos + float.Parse(textboxJogDist.Text, CultureInfo.InvariantCulture.NumberFormat) };
+            textBoxXinput.Text = xyz[0].ToString();
+            textBoxYinput.Text = xyz[1].ToString();
+            textBoxZinput.Text = xyz[2].ToString();
+            buttonMove.PerformClick();
         }
     }
 }
